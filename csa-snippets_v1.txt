@@ -1,0 +1,76 @@
+#### CSA TUTORIAL
+# Fai partire tutto il CSA
+docker-compose up -d
+# per scale up flink task manager: docker-compose up -d --scale flink-taskmanager=2
+
+### KAFKA
+## Tutorial https://docs.cloudera.com/csp-ce/latest/getting-started/topics/csp-ce-sm-kafka.html#csp-ce-sm-kafka
+##
+docker ps -a --format '{{.ID}}\t{{.Names}}' --filter "name=kafka.(\d)" 
+# Returns: bdd8ca14d6e8    cloudera-kafka-1
+# Access stream messaging manager: http://localhost:9991
+docker-compose exec kafka kafka-topics.sh --list --bootstrap-server localhost:9092
+docker exec -it cloudera-kafka-1 /bin/bash
+/opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9094 --topic csce
+
+tmux
+Ctrl-B + " (shift-2)
+
+docker exec -it cloudera-kafka-1 /bin/bash
+docker exec -it cloudera-kafka-1 /bin/bash
+
+vmstat 1 1000 | /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9094 --topic csce
+/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9094 --topic csce --from-beginning --group my-consumer-group
+
+# SCHEMA REGISTRY
+# Access Schema Registry: http://localhost:7788/
+# Create myschema
+
+{
+  "type": "record",
+  "namespace": "com.cloudera.examples",
+  "name": "MachineData",
+  "doc": "Machine utilization metrics",
+  "fields": [
+    {
+      "name": "timestamp",
+      "doc": "Metrics timestamp",
+      "type": "long"
+    },
+    {
+      "name": "hostname",
+      "doc": "Host name of the source machine",
+      "type": "string"
+    },
+    {
+      "name": "counters",
+      "doc": "Machine counters",
+      "type": {
+        "type": "array",
+        "items": {
+          "type" : "record",
+          "name" : "Counter",
+          "fields" : [
+            {
+              "name": "name",
+              "doc": "Name of the counter",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "doc": "Value of the counter",
+              "type": "long"
+            },
+            {
+              "name": "unit",
+              "doc": "Unit of the counter value",
+              "type": ["string", "null"],
+              "default": "null"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+
