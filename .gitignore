@@ -8,8 +8,6 @@ SYLLABUS.md
 csp-ce-latest.zip
 csp-ce-latest/
 generate_slides.py
-install_csa.sh
-start_csa.sh
 ~$CSA_Course_Slides.pptx
 ~$CSA_Course_Slides_v3.pptx
 .venv/
