@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
@@ -68,42 +69,46 @@ class SchemaRegistryKafkaClientRegressionTest {
 
         ensureTopicExists(bootstrapServers, topic);
 
-        Schema schemaV1 = new Schema.Parser().parse(VALUE_SCHEMA_V1_JSON);
-        GenericRecord expectedRecord = new GenericData.Record(schemaV1);
-        expectedRecord.put("run_id", runId);
-        expectedRecord.put("event_id", "evt-0001");
-        expectedRecord.put("host", "server-a");
-        expectedRecord.put("metric", "cpu_load");
-        expectedRecord.put("value", 42.5d);
-        expectedRecord.put("event_ts", 1_700_000_000_000L);
-        System.out.println("V1 sample message: " + expectedRecord);
+        try {
+            Schema schemaV1 = new Schema.Parser().parse(VALUE_SCHEMA_V1_JSON);
+            GenericRecord expectedRecord = new GenericData.Record(schemaV1);
+            expectedRecord.put("run_id", runId);
+            expectedRecord.put("event_id", "evt-0001");
+            expectedRecord.put("host", "server-a");
+            expectedRecord.put("metric", "cpu_load");
+            expectedRecord.put("value", 42.5d);
+            expectedRecord.put("event_ts", 1_700_000_000_000L);
+            System.out.println("V1 sample message: " + expectedRecord);
 
-        produceV1Message(bootstrapServers, schemaRegistryUrl, topic, key, expectedRecord);
-        ConsumerRecord<String, Object> consumed = consumeByRunId(
-                bootstrapServers, schemaRegistryUrl, topic, groupId, runId, Duration.ofSeconds(30)
-        );
+            produceV1Message(bootstrapServers, schemaRegistryUrl, topic, key, expectedRecord);
+            ConsumerRecord<String, Object> consumed = consumeByRunId(
+                    bootstrapServers, schemaRegistryUrl, topic, groupId, runId, Duration.ofSeconds(30)
+            );
 
-        Assertions.assertNotNull(consumed, "Nessun messaggio consumato per run_id=" + runId);
-        Assertions.assertEquals(key, consumed.key());
-        Assertions.assertTrue(consumed.value() instanceof GenericRecord, "Il payload deve essere GenericRecord");
+            Assertions.assertNotNull(consumed, "Nessun messaggio consumato per run_id=" + runId);
+            Assertions.assertEquals(key, consumed.key());
+            Assertions.assertTrue(consumed.value() instanceof GenericRecord, "Il payload deve essere GenericRecord");
 
-        GenericRecord actualRecord = (GenericRecord) consumed.value();
-        System.out.println("Consumed deserialized message: key=" + consumed.key() + " value=" + actualRecord);
-        Assertions.assertEquals(runId, actualRecord.get("run_id").toString());
-        Assertions.assertEquals("evt-0001", actualRecord.get("event_id").toString());
-        Assertions.assertEquals("server-a", actualRecord.get("host").toString());
-        Assertions.assertEquals("cpu_load", actualRecord.get("metric").toString());
-        Assertions.assertEquals(42.5d, (double) actualRecord.get("value"), 0.0001d);
-        Assertions.assertEquals(1_700_000_000_000L, actualRecord.get("event_ts"));
+            GenericRecord actualRecord = (GenericRecord) consumed.value();
+            System.out.println("Consumed deserialized message: key=" + consumed.key() + " value=" + actualRecord);
+            Assertions.assertEquals(runId, actualRecord.get("run_id").toString());
+            Assertions.assertEquals("evt-0001", actualRecord.get("event_id").toString());
+            Assertions.assertEquals("server-a", actualRecord.get("host").toString());
+            Assertions.assertEquals("cpu_load", actualRecord.get("metric").toString());
+            Assertions.assertEquals(42.5d, (double) actualRecord.get("value"), 0.0001d);
+            Assertions.assertEquals(1_700_000_000_000L, actualRecord.get("event_ts"));
 
-        Header schemaVersionHeader = consumed.headers().lastHeader(VALUE_SCHEMA_VERSION_HEADER);
-        if (schemaVersionHeader != null && schemaVersionHeader.value() != null) {
-            System.out.println("value.schema.version.id header presente (" + schemaVersionHeader.value().length + " bytes)");
-        } else {
-            System.out.println("value.schema.version.id header non presente, verifico schema su Schema Registry");
+            Header schemaVersionHeader = consumed.headers().lastHeader(VALUE_SCHEMA_VERSION_HEADER);
+            if (schemaVersionHeader != null && schemaVersionHeader.value() != null) {
+                System.out.println("value.schema.version.id header presente (" + schemaVersionHeader.value().length + " bytes)");
+            } else {
+                System.out.println("value.schema.version.id header non presente, verifico schema su Schema Registry");
+            }
+
+            assertSchemaV1Registered(schemaRegistryUrl, topic);
+        } finally {
+            cleanupRegressionArtifacts(bootstrapServers, schemaRegistryUrl, topic);
         }
-
-        assertSchemaV1Registered(schemaRegistryUrl, topic);
     }
 
     private static void ensureTopicExists(String bootstrapServers, String topic) throws Exception {
@@ -112,6 +117,48 @@ class SchemaRegistryKafkaClientRegressionTest {
         try (AdminClient adminClient = AdminClient.create(adminProps)) {
             NewTopic newTopic = new NewTopic(topic, 1, (short) 1);
             adminClient.createTopics(Collections.singleton(newTopic)).all().get(20, TimeUnit.SECONDS);
+        }
+    }
+
+    private static void cleanupRegressionArtifacts(String bootstrapServers, String schemaRegistryUrl, String topic) {
+        deleteTopicIfExists(bootstrapServers, topic);
+        deleteSchemaSubjectIfExists(schemaRegistryUrl, topic);
+    }
+
+    private static void deleteTopicIfExists(String bootstrapServers, String topic) {
+        Properties adminProps = new Properties();
+        adminProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        try (AdminClient adminClient = AdminClient.create(adminProps)) {
+            if (!adminClient.listTopics().names().get(20, TimeUnit.SECONDS).contains(topic)) {
+                return;
+            }
+            adminClient.deleteTopics(Collections.singleton(topic)).all().get(20, TimeUnit.SECONDS);
+            System.out.println("Cleanup topic completato: " + topic);
+        } catch (Exception e) {
+            System.err.println("Cleanup topic fallito per " + topic + ": " + e.getMessage());
+        }
+    }
+
+    private static void deleteSchemaSubjectIfExists(String schemaRegistryUrl, String subject) {
+        String encodedSubject = URLEncoder.encode(subject, StandardCharsets.UTF_8);
+        String deleteUrl = schemaRegistryUrl + "/schemaregistry/schemas/" + encodedSubject;
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(deleteUrl).openConnection();
+            connection.setRequestMethod("DELETE");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+            int status = connection.getResponseCode();
+
+            if (status >= 200 && status < 300) {
+                System.out.println("Cleanup schema subject completato: " + subject);
+                return;
+            }
+            if (status == 404) {
+                return;
+            }
+            System.err.println("Cleanup schema subject fallito per " + subject + ": HTTP " + status);
+        } catch (IOException e) {
+            System.err.println("Cleanup schema subject fallito per " + subject + ": " + e.getMessage());
         }
     }
 
