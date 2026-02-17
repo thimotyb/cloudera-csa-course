@@ -100,3 +100,4 @@ Spiegare:
 - Aggiungere producer `v2` con campo nuovo (es. `os_type` default)
 - mostrare comportamento compatibilità (`BACKWARD`) nel registry
 - consumare con reader schema diverso e commentare risultato
+- Aggiungere un esempio Kafka Connect **Source** (JDBC Source): inserire righe in una tabella Postgres e mostrare che i record vengono pubblicati nel topic Kafka

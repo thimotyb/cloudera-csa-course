@@ -101,3 +101,4 @@ mvn -Dtest=SchemaRegistryKafkaClientRegressionTest test
 
 ## Future Work
 - Espandere l'esempio con evoluzione schema (v1 -> v2) e mostrare come Schema Registry gestisce compatibilità, versioning e deserializzazione tra versioni diverse.
+- Aggiungere una demo Kafka Connect **Source** (JDBC Source): inserire valori in Postgres e verificare la pubblicazione automatica nel topic Kafka.
