@@ -156,30 +156,54 @@ docker exec -it cloudera-kafka-1 /bin/bash
 {"Name":"Jane","Role":"Developer","Age":"37"}
 
 # Create New Connector > JDBC Sink > Import Connector Configuration
+# ATTENZIONE: CAMBIATO NEXUS.URL, USARE QUELLO DI QUESTO JSON, inoltre scrive in /tmp e non /data per aggirare permessi root su data
+
 {
- "connector.class": "org.apache.nifi.kafka.connect.StatelessNiFiSinkConnector",
- "extensions.directory": "/tmp/nifi-stateless-extensions",
- "failure.ports": "Retry from PutDatabaseRecord",
- "key.converter": "org.apache.kafka.connect.storage.StringConverter",
- "meta.smm.predefined.flow.name": "JDBC Sink",
- "meta.smm.predefined.flow.version": "1.0.0",
- "name": "sink-demo",
- "nexus.url": "https://repository.cloudera.com/artifactory/repo",
- "parameter.JDBC Sink Parameters:Database Connection URL": "jdbc:postgresql://postgresql:5432/csce",
- "parameter.JDBC Sink Parameters:Database Driver Class Name": "org.postgresql.Driver",
- "parameter.JDBC Sink Parameters:Database Driver Location": "/opt/connect/plugin/libs/debezium-connector-postgres/postgresql-connector-java.jar",
- "parameter.JDBC Sink Parameters:Database Table Name": "demo",
- "parameter.JDBC Sink Parameters:Database Type": "PostgreSQL",
- "parameter.JDBC Sink Parameters:Database User Name": "smm",
- "parameter.JDBC Sink Parameters:Database User Password": "cloudera",
- "parameter.JDBC Sink Parameters:Kafka Message Data Format": "JSON",
- "parameter.JDBC Sink Parameters:Schema Access Strategy": "Infer Schema",
- "tasks.max": "1",
- "topics": "csce-connect",
- "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
- "working.directory": "/tmp/nifi-stateless-working"
+  "connector.class": "org.apache.nifi.kafka.connect.StatelessNiFiSinkConnector",
+  "name": "sink-demo",
+  "tasks.max": "1",
+  "topics": "csce-connect",
+  "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+  "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+  "failure.ports": "Retry from PutDatabaseRecord",
+  "meta.smm.predefined.flow.name": "JDBC Sink",
+  "meta.smm.predefined.flow.version": "1.0.0",
+  "nexus.url": "https://repository.cloudera.com/repository/repo/",
+  "extensions.directory": "/tmp/nifi-stateless-extensions",
+  "working.directory": "/tmp/nifi-stateless-working",
+  "parameter.JDBC Sink Parameters:Database Connection URL": "jdbc:postgresql://postgresql:5432/csce",
+  "parameter.JDBC Sink Parameters:Database Driver Class Name": "org.postgresql.Driver",
+  "parameter.JDBC Sink Parameters:Database Driver Location": "/opt/connect/plugin/libs/debezium-connector-postgres/postgresql-connector-java.jar",
+  "parameter.JDBC Sink Parameters:Database Table Name": "demo",
+  "parameter.JDBC Sink Parameters:Database Type": "PostgreSQL",
+  "parameter.JDBC Sink Parameters:Database User Name": "smm",
+  "parameter.JDBC Sink Parameters:Database User Password": "cloudera",
+  "parameter.JDBC Sink Parameters:Kafka Message Data Format": "JSON",
+  "parameter.JDBC Sink Parameters:Schema Access Strategy": "Infer Schema"
 }
 
 # in psql:
 SELECT * FROM public.demo;
+
+###############àà
+# DEMO MYSQL SOURCE DEBEZIUM
+##################
+cd debezium-mysql-source-demo
+./scripts/start-demo.sh
+./scripts/insert-demo-records.sh
+./scripts/consume-topic.sh
+
+## Pulizia
+docker compose down -v
+curl -X DELETE http://localhost:28083/connectors/mysql-source-demo
+
+#####################
+# CLOUDERA SQL STREAM BUILDER
+#####################
+# Open: http://localhost:18121 , admin/admin
+# Tutorial in: https://docs.cloudera.com/csp-ce/latest/getting-started/topics/csp-ce-sa-sql-stream-builder.html#csp-ce-sa-sql-stream-builder
+
+
+
+
 
