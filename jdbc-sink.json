@@ -1,0 +1,23 @@
+{
+  "connector.class": "org.apache.nifi.kafka.connect.StatelessNiFiSinkConnector",
+  "name": "sink-demo",
+  "tasks.max": "1",
+  "topics": "csce-connect",
+  "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+  "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+  "failure.ports": "Retry from PutDatabaseRecord",
+  "meta.smm.predefined.flow.name": "JDBC Sink",
+  "meta.smm.predefined.flow.version": "1.0.0",
+  "nexus.url": "https://repository.cloudera.com/repository/repo/",
+  "extensions.directory": "/tmp/nifi-stateless-extensions",
+  "working.directory": "/tmp/nifi-stateless-working",
+  "parameter.JDBC Sink Parameters:Database Connection URL": "jdbc:postgresql://postgresql:5432/csce",
+  "parameter.JDBC Sink Parameters:Database Driver Class Name": "org.postgresql.Driver",
+  "parameter.JDBC Sink Parameters:Database Driver Location": "/opt/connect/plugin/libs/debezium-connector-postgres/postgresql-connector-java.jar",
+  "parameter.JDBC Sink Parameters:Database Table Name": "demo",
+  "parameter.JDBC Sink Parameters:Database Type": "PostgreSQL",
+  "parameter.JDBC Sink Parameters:Database User Name": "smm",
+  "parameter.JDBC Sink Parameters:Database User Password": "cloudera",
+  "parameter.JDBC Sink Parameters:Kafka Message Data Format": "JSON",
+  "parameter.JDBC Sink Parameters:Schema Access Strategy": "Infer Schema"
+}

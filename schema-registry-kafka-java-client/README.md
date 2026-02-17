@@ -98,3 +98,6 @@ Esegue un round-trip reale su CSA:
 ```bash
 mvn -Dtest=SchemaRegistryKafkaClientRegressionTest test
 ```
+
+## Future Work
+- Espandere l'esempio con evoluzione schema (v1 -> v2) e mostrare come Schema Registry gestisce compatibilità, versioning e deserializzazione tra versioni diverse.

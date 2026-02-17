@@ -74,3 +74,112 @@ vmstat 1 1000 | /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server loca
   ]
 }
 
+VERSION 2:
+{
+  "type": "record",
+  "namespace": "com.cloudera.examples",
+  "name": "MachineData",
+  "doc": "Machine utilization metrics",
+  "fields": [
+    {
+      "name": "timestamp",
+      "doc": "Metrics timestamp",
+      "type": "long"
+    },
+    {
+      "name": "hostname",
+      "doc": "Host name of the source machine",
+      "type": "string"
+    },
+    {
+      "name": "os_type",
+      "doc": "OS type of the source machine",
+      "type": "string",
+      "default": "UNKNOWN"
+    },
+    {
+      "name": "counters",
+      "doc": "Machine counters",
+      "type": {
+        "type": "array",
+        "items": {
+          "type" : "record",
+          "name" : "Counter",
+          "fields" : [
+            {
+              "name": "name",
+              "doc": "Name of the counter",
+              "type": "string"
+            },
+            {
+              "name": "value",
+              "doc": "Value of the counter",
+              "type": "long"
+            },
+            {
+              "name": "unit",
+              "doc": "Unit of the counter value",
+              "type": ["string", "null"],
+              "default": "null"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+
+#### ESERCIZIO SCHEMA REGISTRY CORSO KAFKA CLASSICO
+cd schema-registry-kafka-java-client
+mvn -q exec:java -Dexec.mainClass=com.cloudera.examples.sr.SchemaRegistryKafkaProducer
+mvn -q exec:java -Dexec.mainClass=com.cloudera.examples.sr.SchemaRegistryKafkaConsumer
+
+
+########## KAFKA CONNECT
+docker ps -a --format '{{.ID}}\t{{.Names}}' --filter "name=kafka.(\d)" --filter "name=postgres"
+
+# b0b2e4824f3c    cloudera-kafka-1
+# 34da86dd592c    cloudera-postgresql-1
+
+docker exec -it cloudera-postgresql-1 /bin/bash
+psql
+CREATE DATABASE csce;
+ALTER DATABASE csce OWNER TO smm;
+\c csce
+CREATE TABLE demo (Name VARCHAR ( 255 ), Role VARCHAR, Age INT);
+ALTER TABLE demo OWNER to smm;
+# create topic csce-connect in SMM
+docker exec -it cloudera-kafka-1 /bin/bash
+/opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9094 --topic csce-connect
+{"Name":"Jim","Role":"Developer","Age":"23"}
+{"Name":"Mary","Role":"Data Engineer","Age":"42"}
+{"Name":"Jane","Role":"Developer","Age":"37"}
+
+# Create New Connector > JDBC Sink > Import Connector Configuration
+{
+ "connector.class": "org.apache.nifi.kafka.connect.StatelessNiFiSinkConnector",
+ "extensions.directory": "/tmp/nifi-stateless-extensions",
+ "failure.ports": "Retry from PutDatabaseRecord",
+ "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+ "meta.smm.predefined.flow.name": "JDBC Sink",
+ "meta.smm.predefined.flow.version": "1.0.0",
+ "name": "sink-demo",
+ "nexus.url": "https://repository.cloudera.com/artifactory/repo",
+ "parameter.JDBC Sink Parameters:Database Connection URL": "jdbc:postgresql://postgresql:5432/csce",
+ "parameter.JDBC Sink Parameters:Database Driver Class Name": "org.postgresql.Driver",
+ "parameter.JDBC Sink Parameters:Database Driver Location": "/opt/connect/plugin/libs/debezium-connector-postgres/postgresql-connector-java.jar",
+ "parameter.JDBC Sink Parameters:Database Table Name": "demo",
+ "parameter.JDBC Sink Parameters:Database Type": "PostgreSQL",
+ "parameter.JDBC Sink Parameters:Database User Name": "smm",
+ "parameter.JDBC Sink Parameters:Database User Password": "cloudera",
+ "parameter.JDBC Sink Parameters:Kafka Message Data Format": "JSON",
+ "parameter.JDBC Sink Parameters:Schema Access Strategy": "Infer Schema",
+ "tasks.max": "1",
+ "topics": "csce-connect",
+ "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+ "working.directory": "/tmp/nifi-stateless-working"
+}
+
+# in psql:
+SELECT * FROM public.demo;
+
