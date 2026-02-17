@@ -1,0 +1,40 @@
+services:
+  mysql-source:
+    image: mysql:8.0.37
+    container_name: csa-mysql-source-1
+    command:
+      - --server-id=223344
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --binlog-row-image=FULL
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: inventory
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: appuser
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-source-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    networks:
+      csa-cdc-net:
+        aliases:
+          - mysql-source
+
+volumes:
+  mysql-source-data:
+
+networks:
+  csa-cdc-net:
+    external: true
+    name: ${CSA_DOCKER_NETWORK:-cloudera_csp-ce-net}
