@@ -7,7 +7,7 @@ This repository contains material and runnable demos for the CSA (Cloudera Strea
 - CSA local stack (Docker Compose)
 - Course docs (requirements, syllabus, installation notes)
 - Slides and slide-generation helper
-- Hands-on streaming demos (Kafka, Schema Registry, Kafka Connect, Debezium)
+- Hands-on streaming demos (Kafka, Schema Registry, Kafka Connect, Debezium, Flink tutorial)
 - A running fix log for operational issues
 
 ## Quick Start
@@ -49,6 +49,9 @@ Subsequent starts:
 - `jdbc-sink.json`: ready-to-import Kafka Connect JDBC Sink config
 - `schema-registry-kafka-java-client/`: Java demo for Kafka + Schema Registry
 - `debezium-mysql-source-demo/`: containerized Debezium MySQL Source demo
+- `flink-demo/flink/`: Flink tutorial demos + local `flink-training` snapshot
+- `flink-demo/flink-cli-wordcount/`: Flink local-cluster CLI demo (WordCount)
+- `flink-demo/flink-cli-windowing/`: Flink local-cluster CLI demo (windowing tutorial modernizzato Java 21)
 
 ## Hands-On Demos
 
@@ -82,16 +85,93 @@ chmod +x scripts/*.sh
 ./scripts/consume-topic.sh
 ```
 
+### Flink Tutorial (standalone)
+
+Location:
+
+`flink-demo/flink/`
+
+Prerequisite:
+
+- `java` (JDK 21)
+
+Main commands:
+
+```bash
+cd flink-demo/flink/flink-training
+./gradlew test shadowJar
+./gradlew printRunTasks
+./gradlew :ride-cleansing:runJavaSolution
+# keyed state step
+./gradlew :rides-and-fares:runJavaSolution
+# altri lab disponibili
+./gradlew :hourly-tips:runJavaSolution
+./gradlew :long-ride-alerts:runJavaSolution
+```
+
+The `flink-training` code is already included in:
+
+`flink-demo/flink/flink-training/`
+
+Included modules in this snapshot:
+
+- `common`
+- `ride-cleansing`
+- `rides-and-fares`
+- `hourly-tips`
+- `long-ride-alerts`
+
+Detailed guide for the Flink examples (logic + sources):
+
+`flink-demo/flink/EXAMPLES_GUIDE.md`
+
+### Flink CLI WordCount (local cluster)
+
+Location:
+
+`flink-demo/flink-cli-wordcount/`
+
+Prerequisite:
+
+- `java` (JDK 21+)
+
+Main commands:
+
+```bash
+cd flink-demo/flink-cli-wordcount
+./run-wordcount.sh
+# opzionale: lascia il cluster attivo
+KEEP_CLUSTER_RUNNING=true ./run-wordcount.sh
+# stop separato
+./stop-cluster.sh
+```
+
+### Flink CLI Windowing Tutorial (local cluster)
+
+Location:
+
+`flink-demo/flink-cli-windowing/`
+
+Prerequisite:
+
+- `java` (JDK 21+)
+- `mvn`
+
+Main commands:
+
+```bash
+cd flink-demo/flink-cli-windowing
+./run-windowing.sh
+# modalita' count-window
+WINDOW_MODE=count ./run-windowing.sh
+# lascia job/cluster attivi
+KEEP_JOB_RUNNING=true KEEP_CLUSTER_RUNNING=true ./run-windowing.sh
+# stop separato cluster
+./stop-cluster.sh
+```
+
 ## Fix Tracking
 
 All relevant operational/configuration fixes are documented in:
 
 `FIX.md`
-
-## Maintenance Rule
-
-Whenever a new change impacts students/users (new demo, new script, changed endpoint, changed setup, known workaround):
-
-1. Update this `README.md`.
-2. Add/update the related entry in `FIX.md` if it is a fix/workaround.
-

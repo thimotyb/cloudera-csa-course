@@ -55,3 +55,23 @@ Aggiornare questo file ogni volta che viene risolto un problema operativo o di c
 - **Verifica**
   - Connector `mysql-source-demo` creato.
   - Eventi CDC pubblicati su topic `mysqlsrc.inventory.customers_live`.
+
+## 2026-02-20 - Flink windowing tutorial legacy non compatibile con Java 21
+
+- **Sintomo**
+  - Il tutorial storico di windowing (`flink-tutorials` con Flink `1.9.0`) richiede stack legacy (Java 8/11, dipendenze datate) e non e' adatto all'ambiente Java 21 del corso.
+- **Causa**
+  - Versioni Flink/plug-in build obsolete rispetto al runtime moderno.
+- **Fix/Workaround**
+  - Aggiunta demo aggiornata e vendorizzata in:
+    - `flink-demo/flink-cli-windowing/`
+  - Aggiornamento a:
+    - Flink `1.20.1`
+    - build Maven Java 21
+  - Script operativo CLI end-to-end:
+    - `run-windowing.sh` (start/run/list/cancel/stop)
+    - `stop-cluster.sh`
+- **Verifica**
+  - Esecuzione da `flink-demo/flink-cli-windowing`:
+    - `./run-windowing.sh`
+  - Job visibile con `flink list` e cancellabile via `flink cancel`.
