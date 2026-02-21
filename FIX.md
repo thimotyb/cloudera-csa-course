@@ -90,6 +90,9 @@ Aggiornare questo file ogni volta che viene risolto un problema operativo o di c
     - `taskmanager.bind-host`
     - `rest.bind-address`
   - Default: `FLINK_BIND_ADDRESS=0.0.0.0` (override possibile via env).
+  - Aggiunto readiness check nello start script:
+    - polling su `http://127.0.0.1:8081/overview` con timeout configurabile
+    - variabili: `READINESS_TIMEOUT_SEC`, `READINESS_INTERVAL_SEC`, `FLINK_REST_HOST`, `FLINK_REST_PORT`
 - **Verifica**
   - Avvio:
     - `cd flink-demo/flink-cli-windowing`

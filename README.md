@@ -161,10 +161,14 @@ Main commands:
 
 ```bash
 cd flink-demo/flink-cli-windowing
+# attende readiness REST/UI prima di terminare
 ./start-cluster.sh
+# opzionale: timeout readiness
+READINESS_TIMEOUT_SEC=90 ./start-cluster.sh
 # stop separato cluster
 ./stop-cluster.sh
 # oppure flusso completo end-to-end
+# default: run-windowing cancella il job e ferma il cluster a fine esecuzione
 ./run-windowing.sh
 # modalita' count-window
 WINDOW_MODE=count ./run-windowing.sh

@@ -9,6 +9,18 @@ FLINK_BASE="flink-${FLINK_VERSION}"
 FLINK_DIST="flink-${FLINK_VERSION}-bin-scala_${SCALA_SUFFIX}"
 FLINK_HOME="${FLINK_HOME:-}"
 FLINK_BIND_ADDRESS="${FLINK_BIND_ADDRESS:-0.0.0.0}"
+FLINK_REST_HOST="${FLINK_REST_HOST:-127.0.0.1}"
+FLINK_REST_PORT="${FLINK_REST_PORT:-8081}"
+READINESS_TIMEOUT_SEC="${READINESS_TIMEOUT_SEC:-45}"
+READINESS_INTERVAL_SEC="${READINESS_INTERVAL_SEC:-1}"
+
+require_cmd() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "[ERR] Missing required command: $cmd" >&2
+    exit 1
+  fi
+}
 
 resolve_flink_home() {
   if [[ -n "$FLINK_HOME" && -x "$FLINK_HOME/bin/start-cluster.sh" ]]; then
@@ -75,13 +87,45 @@ kill_stale_processes() {
   sleep 1
 }
 
+wait_for_readiness() {
+  local url="http://${FLINK_REST_HOST}:${FLINK_REST_PORT}/overview"
+  local deadline=$((SECONDS + READINESS_TIMEOUT_SEC))
+  local latest_jm
+  local latest_tm
+
+  while (( SECONDS < deadline )); do
+    if curl -fsS --max-time 2 "$url" >/dev/null 2>&1; then
+      echo "Flink REST is ready: $url"
+      return 0
+    fi
+    sleep "$READINESS_INTERVAL_SEC"
+  done
+
+  echo "[ERR] Flink REST did not become ready within ${READINESS_TIMEOUT_SEC}s: $url" >&2
+  latest_jm="$(ls -1t "$FLINK_HOME"/log/flink-*-standalonesession-*-*.log 2>/dev/null | head -n1 || true)"
+  latest_tm="$(ls -1t "$FLINK_HOME"/log/flink-*-taskexecutor-*-*.log 2>/dev/null | head -n1 || true)"
+
+  if [[ -n "$latest_jm" ]]; then
+    echo "[ERR] Last JobManager log tail: $latest_jm" >&2
+    tail -n 60 "$latest_jm" >&2 || true
+  fi
+  if [[ -n "$latest_tm" ]]; then
+    echo "[ERR] Last TaskManager log tail: $latest_tm" >&2
+    tail -n 60 "$latest_tm" >&2 || true
+  fi
+
+  return 1
+}
+
+require_cmd curl
 resolve_flink_home
 configure_network_binding
 stop_existing_cluster
 kill_stale_processes
 
 (cd "$FLINK_HOME" && ./bin/start-cluster.sh)
+wait_for_readiness
 
 echo "Started Flink cluster at $FLINK_HOME"
 echo "REST/Web bind address: $FLINK_BIND_ADDRESS"
-echo "Dashboard local: http://127.0.0.1:8081"
+echo "Dashboard local: http://${FLINK_REST_HOST}:${FLINK_REST_PORT}"

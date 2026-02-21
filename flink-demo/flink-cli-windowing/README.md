@@ -63,6 +63,7 @@ Nota:
 
 - di default lo script espone la REST/UI su tutte le interfacce (`FLINK_BIND_ADDRESS=0.0.0.0`)
 - per limitare al solo localhost: `FLINK_BIND_ADDRESS=127.0.0.1 ./start-cluster.sh`
+- lo script attende automaticamente la readiness di Flink (`/overview`) prima di terminare
 
 ### 2) Avvio job (solo job)
 
@@ -90,12 +91,19 @@ Comandi utili durante la demo:
 
 ```bash
 cd flink-demo/flink-cli-windowing
+# default: a fine script il job viene cancellato e il cluster viene fermato
 ./run-windowing.sh
+# per lasciare il cluster attivo
+KEEP_CLUSTER_RUNNING=true ./run-windowing.sh
 ```
 
 ## Variabili utili
 
 - `FLINK_BIND_ADDRESS` (default: `0.0.0.0`; usata da `start-cluster.sh` e `run-windowing.sh`)
+- `FLINK_REST_HOST` (default: `127.0.0.1`; host usato per il check readiness)
+- `FLINK_REST_PORT` (default: `8081`; porta usata per il check readiness)
+- `READINESS_TIMEOUT_SEC` (default: `45`)
+- `READINESS_INTERVAL_SEC` (default: `1`)
 - `WINDOW_MODE` (default: `time`; valori: `time|count`)
 - `TIME_WINDOW_SEC` (default: `5`)
 - `COUNT_WINDOW_SIZE` (default: `4`)
