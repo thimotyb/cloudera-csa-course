@@ -19,6 +19,7 @@ WAIT_SECONDS="${WAIT_SECONDS:-10}"
 TAIL_LINES="${TAIL_LINES:-120}"
 KEEP_JOB_RUNNING="${KEEP_JOB_RUNNING:-false}"
 KEEP_CLUSTER_RUNNING="${KEEP_CLUSTER_RUNNING:-false}"
+FLINK_BIND_ADDRESS="${FLINK_BIND_ADDRESS:-0.0.0.0}"
 
 CLUSTER_STARTED=false
 CLUSTER_STOPPED=false
@@ -161,7 +162,7 @@ build_windowing_jar() {
 
 start_cluster() {
   log "Starting local Flink cluster"
-  (cd "$FLINK_HOME" && ./bin/start-cluster.sh)
+  FLINK_HOME="$FLINK_HOME" FLINK_BIND_ADDRESS="$FLINK_BIND_ADDRESS" "$SCRIPT_DIR/start-cluster.sh"
   CLUSTER_STARTED=true
   log "Flink Dashboard: http://localhost:8081"
 }

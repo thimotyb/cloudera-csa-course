@@ -75,3 +75,25 @@ Aggiornare questo file ogni volta che viene risolto un problema operativo o di c
   - Esecuzione da `flink-demo/flink-cli-windowing`:
     - `./run-windowing.sh`
   - Job visibile con `flink list` e cancellabile via `flink cancel`.
+
+## 2026-02-21 - Flink CLI windowing: UI non raggiungibile su porta 8081
+
+- **Sintomo**
+  - Cluster avviato ma dashboard non raggiungibile da browser remoto/host diverso (porta `8081` non risponde).
+- **Causa**
+  - Configurazione di default Flink bindata su `localhost` (`rest.bind-address: localhost` e bind host locali).
+- **Fix/Workaround**
+  - Aggiunto script:
+    - `flink-demo/flink-cli-windowing/start-cluster.sh`
+  - Lo script imposta automaticamente su `config.yaml`:
+    - `jobmanager.bind-host`
+    - `taskmanager.bind-host`
+    - `rest.bind-address`
+  - Default: `FLINK_BIND_ADDRESS=0.0.0.0` (override possibile via env).
+- **Verifica**
+  - Avvio:
+    - `cd flink-demo/flink-cli-windowing`
+    - `./start-cluster.sh`
+  - Controllo porta:
+    - `ss -ltnp | grep 8081`
+  - Dashboard raggiungibile su `http://127.0.0.1:8081` (e su IP host se consentito da rete/firewall).

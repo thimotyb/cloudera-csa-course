@@ -161,13 +161,15 @@ Main commands:
 
 ```bash
 cd flink-demo/flink-cli-windowing
+./start-cluster.sh
+# stop separato cluster
+./stop-cluster.sh
+# oppure flusso completo end-to-end
 ./run-windowing.sh
 # modalita' count-window
 WINDOW_MODE=count ./run-windowing.sh
 # lascia job/cluster attivi
 KEEP_JOB_RUNNING=true KEEP_CLUSTER_RUNNING=true ./run-windowing.sh
-# stop separato cluster
-./stop-cluster.sh
 ```
 
 ## Fix Tracking

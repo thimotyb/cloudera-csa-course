@@ -13,6 +13,7 @@ Questa demo mostra come eseguire da CLI un job di windowing Flink (`TumblingWind
 
 - `windowing-job/`: progetto Maven con classe principale `org.pd.streaming.window.example.TumblingWindowExample`
 - `run-windowing.sh`: script end-to-end
+- `start-cluster.sh`: start cluster con bind rete configurabile (default `0.0.0.0`)
 - `stop-cluster.sh`: stop cluster separato
 
 ## Source usata dal tutorial
@@ -51,12 +52,17 @@ mvn -f windowing-job/pom.xml -DskipTests clean package
 ### 1) Avvio cluster
 
 ```bash
-.runtime/flink-1.20.1/bin/start-cluster.sh
+./start-cluster.sh
 ```
 
 Dashboard:
 
-- `http://localhost:8081`
+- `http://127.0.0.1:8081`
+
+Nota:
+
+- di default lo script espone la REST/UI su tutte le interfacce (`FLINK_BIND_ADDRESS=0.0.0.0`)
+- per limitare al solo localhost: `FLINK_BIND_ADDRESS=127.0.0.1 ./start-cluster.sh`
 
 ### 2) Avvio job (solo job)
 
@@ -89,6 +95,7 @@ cd flink-demo/flink-cli-windowing
 
 ## Variabili utili
 
+- `FLINK_BIND_ADDRESS` (default: `0.0.0.0`; usata da `start-cluster.sh` e `run-windowing.sh`)
 - `WINDOW_MODE` (default: `time`; valori: `time|count`)
 - `TIME_WINDOW_SEC` (default: `5`)
 - `COUNT_WINDOW_SIZE` (default: `4`)
