@@ -1,6 +1,6 @@
 # Flink CLI Demo - Windowing Tutorial (Java 21)
 
-Questa demo mostra come eseguire da CLI un job di windowing Flink, partendo da una versione modernizzata del tutorial `TumblingWindowExample`.
+Questa demo mostra come eseguire da CLI un job di windowing Flink (`TumblingWindowExample`).
 
 ## Obiettivo didattico
 
@@ -8,13 +8,6 @@ Questa demo mostra come eseguire da CLI un job di windowing Flink, partendo da u
 - build locale del job tutorial con Maven (Java 21)
 - submit job da CLI (`flink run`)
 - verifica job (`flink list`) e cancellazione (`flink cancel`)
-
-## Cosa e' stato aggiornato rispetto agli appunti originali
-
-- Flink aggiornato da `1.9.0` a `1.20.1`
-- codice tutorial vendorizzato in questa cartella (non serve `git clone` esterno)
-- build su Java 21
-- script automatizzati per start/run/list/cancel/stop
 
 ## Struttura
 
@@ -38,27 +31,61 @@ Modalita' disponibili:
 - `curl`
 - `tar`
 
-## Avvio rapido
+## Demo live (step separati)
+
+### 0) Preparazione (una tantum)
+
+```bash
+cd flink-demo/flink-cli-windowing
+FLINK_VERSION=1.20.1
+SCALA_SUFFIX=2.12
+FLINK_TGZ="flink-${FLINK_VERSION}-bin-scala_${SCALA_SUFFIX}.tgz"
+
+mkdir -p .runtime
+test -f ".runtime/${FLINK_TGZ}" || curl -fL "https://archive.apache.org/dist/flink/flink-${FLINK_VERSION}/${FLINK_TGZ}" -o ".runtime/${FLINK_TGZ}"
+test -d ".runtime/flink-${FLINK_VERSION}" || tar -xf ".runtime/${FLINK_TGZ}" -C .runtime
+
+mvn -f windowing-job/pom.xml -DskipTests clean package
+```
+
+### 1) Avvio cluster
+
+```bash
+.runtime/flink-1.20.1/bin/start-cluster.sh
+```
+
+Dashboard:
+
+- `http://localhost:8081`
+
+### 2) Avvio job (solo job)
+
+```bash
+.runtime/flink-1.20.1/bin/flink run -d \
+  -c org.pd.streaming.window.example.TumblingWindowExample \
+  windowing-job/target/windowing-job-1.0.0.jar \
+  --mode time --time-window-sec 5 --source-period-ms 1000
+```
+
+Comandi utili durante la demo:
+
+```bash
+.runtime/flink-1.20.1/bin/flink list
+.runtime/flink-1.20.1/bin/flink cancel <JOB_ID>
+```
+
+### 3) Stop cluster
+
+```bash
+.runtime/flink-1.20.1/bin/stop-cluster.sh
+```
+
+## Avvio rapido (script unico)
 
 ```bash
 cd flink-demo/flink-cli-windowing
 ./run-windowing.sh
 ```
-
-Cosa fa lo script:
-
-1. verifica JDK 21+
-2. scarica/estrae Flink 1.20.1 in `./.runtime/` (se assente)
-3. compila il job Maven in `windowing-job/target/`
-4. avvia cluster locale (`start-cluster.sh`)
-5. submit job in detached mode
-6. attende alcuni secondi e mostra `flink list`
-7. mostra tail del log TaskExecutor
-8. cancella il job e ferma il cluster
-
-Dashboard locale:
-
-- `http://localhost:8081`
 
 ## Variabili utili
 
@@ -71,20 +98,3 @@ Dashboard locale:
 - `KEEP_CLUSTER_RUNNING=true` (non ferma il cluster)
 - `FLINK_VERSION` (default: `1.20.1`)
 - `SCALA_SUFFIX` (default: `2.12`)
-
-## Esecuzione manuale equivalente
-
-```bash
-cd flink-demo/flink-cli-windowing
-mvn -f windowing-job/pom.xml -DskipTests clean package
-
-.runtime/flink-1.20.1/bin/start-cluster.sh
-.runtime/flink-1.20.1/bin/flink run -d \
-  -c org.pd.streaming.window.example.TumblingWindowExample \
-  windowing-job/target/windowing-job-1.0.0.jar \
-  --mode time --time-window-sec 5 --source-period-ms 1000
-
-.runtime/flink-1.20.1/bin/flink list
-.runtime/flink-1.20.1/bin/flink cancel <JOB_ID>
-.runtime/flink-1.20.1/bin/stop-cluster.sh
-```
