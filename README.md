@@ -53,6 +53,7 @@ Subsequent starts:
 - `flink-demo/flink-cli-wordcount/`: Flink local-cluster CLI demo (WordCount)
 - `flink-demo/flink-cli-windowing/`: Flink local-cluster CLI demo (windowing tutorial modernizzato Java 21)
   - include anche guida CSA: `flink-demo/flink-cli-windowing/README_CSA.md`
+- `flink-demo/flink-operations-kafka/`: Flink Operations Playground standalone con Kafka (recovery, savepoint, rescale)
 
 ## Hands-On Demos
 
@@ -180,6 +181,28 @@ KEEP_JOB_RUNNING=true KEEP_CLUSTER_RUNNING=true ./run-windowing.sh
 CSA variant (use Flink services from course `docker-compose.yml`):
 
 - `flink-demo/flink-cli-windowing/README_CSA.md`
+
+### Flink Operations Playground + Kafka (standalone)
+
+Location:
+
+`flink-demo/flink-operations-kafka/`
+
+Main commands:
+
+```bash
+cd flink-demo/flink-operations-kafka
+# build + up + readiness check dashboard
+./start-playground.sh
+# job list via client container
+docker compose run --rm --no-deps client flink list
+# stop stack
+./stop-playground.sh
+```
+
+Dashboard default:
+
+- `http://127.0.0.1:18081`
 
 ## Fix Tracking
 

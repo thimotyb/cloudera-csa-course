@@ -121,3 +121,22 @@ Aggiornare questo file ogni volta che viene risolto un problema operativo o di c
   - Build jar CSA completata.
   - Submit job `--mode time` su CSA in stato `RUNNING`.
   - `flink list -a` e `flink cancel <JOB_ID>` operativi via `docker compose exec flink-jobmanager`.
+
+## 2026-02-21 - Flink Operations Playground: tag Kafka non piu' disponibile
+
+- **Sintomo**
+  - Avvio playground fallisce durante pull con errore:
+    - `bitnami/kafka:3.9.0: not found`
+- **Causa**
+  - Il tag `bitnami/kafka:3.9.0` non e' piu' pubblicato.
+- **Fix/Workaround**
+  - Aggiornata la demo vendorizzata `flink-demo/flink-operations-kafka/`:
+    - sostituita immagine Kafka con `confluentinc/cp-kafka:7.7.1`
+    - configurazione single-node KRaft aggiornata via variabili ambiente
+  - Migliorata operativita' script:
+    - `start-playground.sh` usa `docker compose up -d --remove-orphans`
+    - `stop-playground.sh` usa `docker compose down --remove-orphans`
+- **Verifica**
+  - `./start-playground.sh` completa con dashboard pronta su `http://127.0.0.1:18081`.
+  - Job `Click Event Count` in stato `RUNNING`.
+  - Topic Kafka `input`/`output` presenti e consumabili da `docker compose exec kafka kafka-console-consumer`.
