@@ -1,6 +1,5 @@
 package org.pd.streaming.window.example;
 
-import java.time.Duration;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +10,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
@@ -43,7 +43,7 @@ public final class TumblingWindowExample {
 
     if ("time".equals(mode)) {
       intStream
-          .windowAll(TumblingProcessingTimeWindows.of(Duration.ofSeconds(timeWindowSec)))
+          .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(timeWindowSec)))
           .process(new TimeWindowSumFunction())
           .print();
     } else {
@@ -59,7 +59,7 @@ public final class TumblingWindowExample {
   }
 
   private static int parsePositiveInt(String value, int defaultValue, String optionName) {
-    if (value == null || value.isBlank()) {
+    if (value == null || value.trim().isEmpty()) {
       return defaultValue;
     }
 

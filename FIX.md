@@ -100,3 +100,24 @@ Aggiornare questo file ogni volta che viene risolto un problema operativo o di c
   - Controllo porta:
     - `ss -ltnp | grep 8081`
   - Dashboard raggiungibile su `http://127.0.0.1:8081` (e su IP host se consentito da rete/firewall).
+
+## 2026-02-21 - Flink CLI windowing su CSA: incompatibilita' Java/Flink e finestra time
+
+- **Sintomo**
+  - Submit del jar su `flink-jobmanager` CSA fallisce con:
+    - `UnsupportedClassVersionError` (class file version 65 vs runtime Java 8)
+  - Dopo ricompilazione, `--mode time` puo' fallire con errore su timestamp `Long.MIN_VALUE`.
+- **Causa**
+  - Runtime CSA Flink (`1.15.1-csadh1.9.0.0`) gira su Java 8.
+  - L'esempio usava path windowing che in questo contesto richiede timestamp/watermark event-time.
+- **Fix/Workaround**
+  - Compilazione per CSA:
+    - `-Dmaven.compiler.release=8 -Dflink.version=1.15.1`
+  - Aggiornato `TumblingWindowExample` per usare esplicitamente processing-time:
+    - `windowAll(TumblingProcessingTimeWindows.of(...))`
+  - Aggiunta guida operativa CSA:
+    - `flink-demo/flink-cli-windowing/README_CSA.md`
+- **Verifica**
+  - Build jar CSA completata.
+  - Submit job `--mode time` su CSA in stato `RUNNING`.
+  - `flink list -a` e `flink cancel <JOB_ID>` operativi via `docker compose exec flink-jobmanager`.

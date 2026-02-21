@@ -2,6 +2,10 @@
 
 Questa demo mostra come eseguire da CLI un job di windowing Flink (`TumblingWindowExample`).
 
+Per la variante che usa il Flink del cluster CSA (Docker Compose del corso), vedi:
+
+- `README_CSA.md`
+
 ## Obiettivo didattico
 
 - avvio cluster locale Flink standalone

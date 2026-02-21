@@ -52,6 +52,7 @@ Subsequent starts:
 - `flink-demo/flink/`: Flink tutorial demos + local `flink-training` snapshot
 - `flink-demo/flink-cli-wordcount/`: Flink local-cluster CLI demo (WordCount)
 - `flink-demo/flink-cli-windowing/`: Flink local-cluster CLI demo (windowing tutorial modernizzato Java 21)
+  - include anche guida CSA: `flink-demo/flink-cli-windowing/README_CSA.md`
 
 ## Hands-On Demos
 
@@ -175,6 +176,10 @@ WINDOW_MODE=count ./run-windowing.sh
 # lascia job/cluster attivi
 KEEP_JOB_RUNNING=true KEEP_CLUSTER_RUNNING=true ./run-windowing.sh
 ```
+
+CSA variant (use Flink services from course `docker-compose.yml`):
+
+- `flink-demo/flink-cli-windowing/README_CSA.md`
 
 ## Fix Tracking
 
