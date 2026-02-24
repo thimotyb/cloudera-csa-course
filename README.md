@@ -48,8 +48,12 @@ Subsequent starts:
 - `csa-snippets_v1.txt`: quick command snippets used during labs
 - `jdbc-sink.json`: ready-to-import Kafka Connect JDBC Sink config
 - `schema-registry-kafka-java-client/`: Java demo for Kafka + Schema Registry
+- `ssb-demo/`: demo SQL Stream Builder (Flink SQL in CSA)
+  - windowing demo pronta aula: `ssb-demo/windowing-sql-demo/`
 - `debezium-mysql-source-demo/`: containerized Debezium MySQL Source demo
 - `flink-demo/flink/`: Flink tutorial demos + local `flink-training` snapshot
+- `flink-demo/flink-sql/`: Flink SQL standalone demo (Kafka + Elasticsearch + Kibana)
+  - query summary per lezione: `flink-demo/flink-sql/FLINK_SQL_QUERY_ASPECTS_SUMMARY.md`
 - `flink-demo/flink-cli-wordcount/`: Flink local-cluster CLI demo (WordCount)
 - `flink-demo/flink-cli-windowing/`: Flink local-cluster CLI demo (windowing tutorial modernizzato Java 21)
   - include anche guida CSA: `flink-demo/flink-cli-windowing/README_CSA.md`
@@ -85,6 +89,23 @@ chmod +x scripts/*.sh
 ./scripts/start-demo.sh
 ./scripts/insert-demo-records.sh
 ./scripts/consume-topic.sh
+```
+
+### SSB Windowing SQL Demo (CSA stack)
+
+Location:
+
+`ssb-demo/windowing-sql-demo/`
+
+Main commands:
+
+```bash
+cd ssb-demo/windowing-sql-demo
+./scripts/create_topics.sh
+# poi esegui SQL da cartella sql/ in SSB (http://localhost:18121)
+./scripts/consume_topic.sh user_behavior_tumbling_out 20
+./scripts/consume_topic.sh user_behavior_hopping_out 20
+./scripts/consume_topic.sh user_behavior_cumulative_out 20
 ```
 
 ### Flink Tutorial (standalone)
@@ -126,6 +147,28 @@ Included modules in this snapshot:
 Detailed guide for the Flink examples (logic + sources):
 
 `flink-demo/flink/EXAMPLES_GUIDE.md`
+
+### Flink SQL Demo (standalone)
+
+Location:
+
+`flink-demo/flink-sql/`
+
+Main commands:
+
+```bash
+cd flink-demo/flink-sql
+./start-sql-demo.sh
+./submit-sql-job.sh
+# SQL client interattivo
+./open-sql-client.sh
+# verifica output su Elasticsearch
+./check-es-results.sh
+```
+
+Lecture doc (query aspects summary):
+
+`flink-demo/flink-sql/FLINK_SQL_QUERY_ASPECTS_SUMMARY.md`
 
 ### Flink CLI WordCount (local cluster)
 
