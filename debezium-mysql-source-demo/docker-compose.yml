@@ -1,3 +1,5 @@
+version: "2.1"
+
 services:
   mysql-source:
     image: mysql:8.0.37
@@ -37,4 +39,4 @@ volumes:
 networks:
   csa-cdc-net:
     external: true
-    name: ${CSA_DOCKER_NETWORK:-cloudera_csp-ce-net}
+    name: ${CSA_DOCKER_NETWORK}

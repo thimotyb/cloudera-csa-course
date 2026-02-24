@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONNECT_CONTAINER="${CONNECT_CONTAINER:-cloudera-kafka-connect-1}"
+CONNECT_CONTAINER="${CONNECT_CONTAINER:-cloudera-csa-course_kafka-connect_1}"
 DRIVER_TARGET="${DRIVER_TARGET:-/opt/connect/plugin/libs/debezium-connector-mysql/mysql-connector-java.jar}"
 MYSQL_JDBC_VERSION="${MYSQL_JDBC_VERSION:-8.0.27}"
 TMP_FILE="/tmp/mysql-connector-java-${MYSQL_JDBC_VERSION}.jar"
