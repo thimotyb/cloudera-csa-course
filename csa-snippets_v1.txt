@@ -216,9 +216,6 @@ cd /home/azureuser/cloudera-csa-course/flink-demo/flink-cli-wordcount/.runtime
 wget -c https://archive.apache.org/dist/flink/flink-1.20.1/flink-1.20.1-bin-scala_2.12.tgz
 
 
-
-
-
 #####################
 # CLOUDERA SQL STREAM BUILDER
 #####################
