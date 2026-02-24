@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 /**
  * Produces TaxiRecords into a Kafka topic.
  */
-public class KafkaProducer implements Consumer<String> {
+public class KafkaProducer implements Consumer<String>, AutoCloseable {
 
 	private final String topic;
 	private final org.apache.kafka.clients.producer.KafkaProducer<byte[], byte[]> producer;
@@ -44,6 +44,12 @@ public class KafkaProducer implements Consumer<String> {
 		// create producer record and publish to Kafka
 		ProducerRecord<byte[], byte[]> kafkaRecord = new ProducerRecord<>(topic, record.getBytes());
 		producer.send(kafkaRecord);
+	}
+
+	@Override
+	public void close() {
+		producer.flush();
+		producer.close();
 	}
 
 	/**

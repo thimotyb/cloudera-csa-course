@@ -56,13 +56,15 @@ public class SourceGenerator {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceGenerator.class);
     private static final long SPEED = 1000; // 每秒1000条
     private static final String MAX = "MAX"; // 不限速
-    private static final String FROM_BEGINNING = "from-beginning"; // 不限速
+    private static final String FROM_BEGINNING = "from-beginning";
     private static final File checkpoint = new File("checkpoint");
 
     public static void main(String[] args) {
         File userBehaviorFile = new File("datagen/user_behavior.log");
         long speed = SPEED;
         long endLine = Long.MAX_VALUE;
+        boolean loop = false;
+        boolean fromBeginning = false;
         Consumer<String> consumer = new ConsolePrinter();
 
         // parse arguments
@@ -101,13 +103,20 @@ public class SourceGenerator {
                     String end = args[argOffset++];
                     endLine = Long.parseLong(end);
                     break;
+                case "--loop":
+                    loop = true;
+                    break;
+                case FROM_BEGINNING:
+                case "--from-beginning":
+                    fromBeginning = true;
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown parameter");
             }
         }
 
         long startLine = 0;
-        if (checkpoint.exists()) {
+        if (!fromBeginning && checkpoint.exists()) {
             String line = null;
             try {
                 line = FileUtils.readFileUtf8(checkpoint);
@@ -128,55 +137,129 @@ public class SourceGenerator {
         }
         checkpointState(startLine);
 
+        long cycleShiftMillis = resolveCycleShiftMillis(userBehaviorFile);
+        if (loop) {
+            LOGGER.info("Loop mode enabled with cycle timestamp shift of {} ms.", cycleShiftMillis);
+        }
+
         TimeZone tz = TimeZone.getTimeZone("Asia/Shanghai");
-        try (InputStream inputStream = new FileInputStream(userBehaviorFile)) {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        try {
             int counter = 0;
             long start = System.nanoTime();
-            long currentLine = 0;
-            while (reader.ready()) {
-                String line = reader.readLine();
-                if (currentLine < startLine) {
-                    currentLine++;
-                    continue;
-                }
-                currentLine++;
-                checkpointState(currentLine);
-                String[] splits = line.split(",");
-                long ts = Long.parseLong(splits[4])*1000;
-                Instant instant = Instant.ofEpochMilli(ts + tz.getOffset(ts));
-                LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.of("Z"));
-                String outline = String.format(
-                    "{\"user_id\": \"%s\", \"item_id\":\"%s\", \"category_id\": \"%s\", \"behavior\": \"%s\", \"ts\": \"%s\"}",
-                    splits[0],
-                    splits[1],
-                    splits[2],
-                    splits[3],
-                    SQL_TIMESTAMP_FORMAT.format(dateTime));
-                consumer.accept(outline);
-                counter++;
-                if (counter >= speed) {
-                    long end = System.nanoTime();
-                    long diff = end - start;
-                    while (diff < 1000_000_000) {
-                        Thread.sleep(1);
-                        end = System.nanoTime();
-                        diff = end - start;
+            long totalSent = 0;
+            long cycle = 0;
+            boolean firstCycle = true;
+            boolean printedStartMessage = false;
+
+            while (true) {
+                long cycleStartLine = firstCycle ? startLine : 0;
+                long currentLine = 0;
+
+                try (InputStream inputStream = new FileInputStream(userBehaviorFile);
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (currentLine < cycleStartLine) {
+                            currentLine++;
+                            continue;
+                        }
+
+                        currentLine++;
+                        checkpointState(currentLine);
+
+                        String[] splits = line.split(",");
+                        long ts = Long.parseLong(splits[4]) * 1000 + cycle * cycleShiftMillis;
+                        Instant instant = Instant.ofEpochMilli(ts + tz.getOffset(ts));
+                        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.of("Z"));
+                        String outline = String.format(
+                            "{\"user_id\": \"%s\", \"item_id\":\"%s\", \"category_id\": \"%s\", \"behavior\": \"%s\", \"ts\": \"%s\"}",
+                            splits[0],
+                            splits[1],
+                            splits[2],
+                            splits[3],
+                            SQL_TIMESTAMP_FORMAT.format(dateTime));
+
+                        consumer.accept(outline);
+                        totalSent++;
+
+                        counter++;
+                        if (counter >= speed) {
+                            long end = System.nanoTime();
+                            long diff = end - start;
+                            while (diff < 1000_000_000) {
+                                Thread.sleep(1);
+                                end = System.nanoTime();
+                                diff = end - start;
+                            }
+                            start = end;
+                            counter = 0;
+                        }
+
+                        if (!printedStartMessage && totalSent >= 10) {
+                            System.out.println("Start sending messages to Kafka...");
+                            printedStartMessage = true;
+                        }
+
+                        if (totalSent >= endLine) {
+                            System.out.println("send " + totalSent + " lines.");
+                            return;
+                        }
                     }
-                    start = end;
-                    counter = 0;
                 }
-                if (currentLine == 10) {
-                    System.out.println("Start sending messages to Kafka...");
-                }
-                if (currentLine >= endLine) {
-                    System.out.println("send " + currentLine + " lines.");
+
+                if (!loop) {
                     break;
                 }
+
+                cycle++;
+                firstCycle = false;
+                checkpointState(0);
             }
-            reader.close();
         } catch (IOException | InterruptedException e) {
             LOGGER.error("exception", e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        } finally {
+            closeConsumer(consumer);
+        }
+    }
+
+    private static long resolveCycleShiftMillis(File userBehaviorFile) {
+        long minTsMillis = Long.MAX_VALUE;
+        long maxTsMillis = Long.MIN_VALUE;
+
+        try (InputStream inputStream = new FileInputStream(userBehaviorFile);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] splits = line.split(",");
+                if (splits.length < 5) {
+                    continue;
+                }
+                long tsMillis = Long.parseLong(splits[4]) * 1000;
+                minTsMillis = Math.min(minTsMillis, tsMillis);
+                maxTsMillis = Math.max(maxTsMillis, tsMillis);
+            }
+        } catch (IOException e) {
+            LOGGER.error("exception", e);
+            return 0;
+        }
+
+        if (minTsMillis == Long.MAX_VALUE || maxTsMillis == Long.MIN_VALUE) {
+            return 0;
+        }
+
+        return (maxTsMillis - minTsMillis) + 1000;
+    }
+
+    private static void closeConsumer(Consumer<String> consumer) {
+        if (consumer instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable) consumer).close();
+            } catch (Exception e) {
+                LOGGER.error("exception", e);
+            }
         }
     }
 
