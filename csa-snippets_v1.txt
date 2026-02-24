@@ -3,6 +3,17 @@
 docker-compose up -d
 # per scale up flink task manager: docker-compose up -d --scale flink-taskmanager=2
 
+
+******************
+* INSTALLA DOCKER COMPOSE (non docker-compose)
+*******************
+mkdir -p "$HOME/.docker/cli-plugins"
+curl -fL "https://github.com/docker/compose/releases/download/v5.0.2/docker-compose-linux-x86_64" \
+  -o "$HOME/.docker/cli-plugins/docker-compose"
+chmod +x "$HOME/.docker/cli-plugins/docker-compose"
+docker compose version
+
+
 ### KAFKA
 ## Tutorial https://docs.cloudera.com/csp-ce/latest/getting-started/topics/csp-ce-sm-kafka.html#csp-ce-sm-kafka
 ##
@@ -197,6 +208,16 @@ cd debezium-mysql-source-demo
 ## Pulizia
 docker compose down -v
 curl -X DELETE http://localhost:28083/connectors/mysql-source-demo
+
+############# #
+SCARICA FLINK LOCALE############
+
+cd /home/azureuser/cloudera-csa-course/flink-demo/flink-cli-wordcount/.runtime
+wget -c https://archive.apache.org/dist/flink/flink-1.20.1/flink-1.20.1-bin-scala_2.12.tgz
+
+
+
+
 
 #####################
 # CLOUDERA SQL STREAM BUILDER
