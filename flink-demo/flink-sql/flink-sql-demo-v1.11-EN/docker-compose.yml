@@ -34,7 +34,9 @@ services:
         taskmanager.numberOfTaskSlots: 10
 
   datagen:
-    build: ./datagen
+    build:
+      context: .
+      dockerfile: datagen/Dockerfile
     image: local/flink-sql-demo-datagen:v1.11-en
     command: "java -classpath /opt/datagen/flink-sql-demo.jar myflink.SourceGenerator --input /opt/datagen/user_behavior.log --output kafka kafka:9094 --speedup 2000"
     depends_on:

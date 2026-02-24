@@ -13,6 +13,7 @@ Vendored copy of the tutorial repository, adapted to run locally in this course 
 
 - vendored source under this folder (no runtime `git clone` required)
 - local image builds for `sql-client`, `datagen`, and `mysql`
+- `datagen` JAR is built during Docker image build (not versioned), so repo download/pull stays small
 - non-conflicting default host ports (so it can run together with other demos)
 - helper scripts for start/stop
 - included sample `datagen/user_behavior.log` so the generator works out of the box
