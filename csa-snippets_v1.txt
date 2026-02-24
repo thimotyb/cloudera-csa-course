@@ -7,17 +7,17 @@ docker-compose up -d
 ## Tutorial https://docs.cloudera.com/csp-ce/latest/getting-started/topics/csp-ce-sm-kafka.html#csp-ce-sm-kafka
 ##
 docker ps -a --format '{{.ID}}\t{{.Names}}' --filter "name=kafka.(\d)" 
-# Returns: bdd8ca14d6e8    cloudera-kafka-1
+# Returns: bdd8ca14d6e8    cloudera-csa-course_kafka_1   
 # Access stream messaging manager: http://localhost:9991
 docker-compose exec kafka kafka-topics.sh --list --bootstrap-server localhost:9092
-docker exec -it cloudera-kafka-1 /bin/bash
+docker exec -it cloudera-csa-course_kafka_1 /bin/bash
 /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9094 --topic csce
 
 tmux
 Ctrl-B + " (shift-2)
 
-docker exec -it cloudera-kafka-1 /bin/bash
-docker exec -it cloudera-kafka-1 /bin/bash
+docker exec -it cloudera-csa-course_kafka_1 /bin/bash
+docker exec -it cloudera-csa-course_kafka_1 /bin/bash
 
 vmstat 1 1000 | /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9094 --topic csce
 /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9094 --topic csce --from-beginning --group my-consumer-group
@@ -138,10 +138,10 @@ mvn -q exec:java -Dexec.mainClass=com.cloudera.examples.sr.SchemaRegistryKafkaCo
 ########## KAFKA CONNECT
 docker ps -a --format '{{.ID}}\t{{.Names}}' --filter "name=kafka.(\d)" --filter "name=postgres"
 
-# b0b2e4824f3c    cloudera-kafka-1
-# 34da86dd592c    cloudera-postgresql-1
+893782165e16	cloudera-csa-course_kafka_1
+0307f16cda62	cloudera-csa-course_postgresql_1
 
-docker exec -it cloudera-postgresql-1 /bin/bash
+docker exec -it cloudera-csa-course_postgresql_1 /bin/bash
 psql
 CREATE DATABASE csce;
 ALTER DATABASE csce OWNER TO smm;
@@ -149,11 +149,12 @@ ALTER DATABASE csce OWNER TO smm;
 CREATE TABLE demo (Name VARCHAR ( 255 ), Role VARCHAR, Age INT);
 ALTER TABLE demo OWNER to smm;
 # create topic csce-connect in SMM
-docker exec -it cloudera-kafka-1 /bin/bash
+docker exec -it cloudera-csa-course_kafka_1 /bin/bash
 /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9094 --topic csce-connect
 {"Name":"Jim","Role":"Developer","Age":"23"}
 {"Name":"Mary","Role":"Data Engineer","Age":"42"}
 {"Name":"Jane","Role":"Developer","Age":"37"}
+{"Name":"Timo","Role":"Architect","Age":"19"}
 
 # Create New Connector > JDBC Sink > Import Connector Configuration
 # ATTENZIONE: CAMBIATO NEXUS.URL, USARE QUELLO DI QUESTO JSON, inoltre scrive in /tmp e non /data per aggirare permessi root su data

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KAFKA_CONTAINER="${KAFKA_CONTAINER:-cloudera-kafka-1}"
+KAFKA_CONTAINER="${KAFKA_CONTAINER:-cloudera-csa-course_kafka_1}"
 TOPIC="${TOPIC:-mysqlsrc.inventory.customers_live}"
 MAX_MESSAGES="${MAX_MESSAGES:-20}"
 TIMEOUT_MS="${TIMEOUT_MS:-20000}"
