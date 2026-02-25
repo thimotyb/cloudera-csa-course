@@ -68,6 +68,7 @@ REMOVE_VOLUMES=true ./scripts/stop-standalone.sh
 ## Notes
 
 - `docker compose` is preferred; scripts also support legacy `docker-compose`.
+- `datagen` runs continuously (`--loop`) and replays the sample file with a forward timestamp shift at each cycle, so event time keeps moving.
 - If port `18082` is in use, set another value:
 
 ```bash
