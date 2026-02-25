@@ -246,6 +246,177 @@ CREATE TABLE  orders (
 
 SELECT * FROM orders;
 
+================
+FLINK
+================
+apt install zip
+curl -s "https://get.sdkman.io" | bash
+source "/home/Student/.sdkman/bin/sdkman-init.sh"
+sdk install java 8.0.402-tem
+java -version
+apt install maven
+mvn -v
+
+git clone https://github.com/thimotyb/flink-training
+cd flink-training/
+./gradlew test shadowJar
+cd ride-cleansing/
+# Complete Solution of Filtering Method (look at solution package, also change necessary imports from common package)
+cd ..
+./gradlew printRunTasks
+./gradlew :ride-cleansing:runJavaSolution
+
+#### KEYED STATE EXAMPLE
+./gradlew :rides-and-fares:runJavaSolution
+
+
+===============
+FLINK TUTORIAL (needs Java 11)
+===============
+# https://nightlies.apache.org/flink/flink-docs-stable/docs/try-flink/local_installation/
+
+wget https://dlcdn.apache.org/flink/flink-1.20.1/flink-1.20.1-bin-scala_2.12.tgz
+tar xfz flink-1.20.1-bin-scala_2.12.tgz
+cd flink-1.20.1/
+./bin/start-cluster.sh
+#Open in port 8081 to see flink dashboard
+./bin/flink run examples/streaming/WordCount.jar 
+tail log/flink-*-taskexecutor-*.out
+# Source: https://github.com/apache/flink/blob/master/flink-examples/flink-examples-streaming/src/main/java/org/apache/flink/streaming/examples/wordcount/WordCount.java
+./bin/stop-cluster.sh
+
+# Windowing Tutorial (Java 8?)
+
+# Needs old version of Flink
+# https://flink.apache.org/downloads/
+wget https://archive.apache.org/dist/flink/flink-1.9.0/flink-1.9.0-bin-scala_2.11.tgz
+tar xfz flink-1.9.0-bin-scala_2.11.tgz
+
+git clone https://github.com/thimotyb/flink-tutorials.git
+cd flink-tutorials
+mvn clean install -DskipTests
+cd target
+jar cvf tutorials.jar -C ./classes .
+jar --list -f tutorials.jar
+cd ../../flink-1.9.0
+./bin/start-cluster.sh
+./bin/flink run -c org.pd.streaming.window.example.TumblingWindowExample ../flink-tutorials/target/tutorials.jar
+#Open in port 8081 to see flink dashboard
+./bin/flink list
+############
+------------------ Running/Restarting Jobs -------------------
+01.03.2025 14:14:55 : bae1e26ad9fbe52f0c4acf444db728ad : Flink Streaming Job (RUNNING)
+--------------------------------------------------------------
+################à
+./bin/flink cancel bae1e26ad9fbe52f0c4acf444db728ad
+./bin/stop-cluster.sh
+
+=======================
+FLINK OPERATIONS PLAYGROUND WITH KAFKA DEMO
+https://nightlies.apache.org/flink/flink-docs-release-1.20/docs/try-flink/flink-operations-playground/
+========================
+git clone https://github.com/thimotyb/flink-playgrounds.git
+cd flink-playgrounds/operations-playground
+docker-compose build
+docker-compose up -d
+docker-compose ps
+# Tailing log
+docker-compose logs -f jobmanager
+docker-compose logs -f taskmanager
+# Running the flink CLI from the client container
+docker-compose run --no-deps client flink --help
+docker-compose run --no-deps client flink list
+# Inspecting Flink Jobs
+curl localhost:8081/jobs | jq
+# Inspecting Kafka topics
+# Open these two consumers side-by-side in different windows (input produces stream, output get 15-sec window summarization)
+//input topic (1000 records/s)
+docker-compose exec kafka kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 --topic input
+//output topic (24 records/min)
+docker-compose exec kafka kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 --topic output
+# Introduce a fault by killing a worker
+docker-compose kill taskmanager
+# Notice in UI Dashboard Flink is trying to Reschedule
+# Restart task manager, In the output you will see that all keys (pages) are present for all time windows and that every count is exactly one thousand
+docker-compose up -d taskmanager
+# Procedure for Upgrade and Rescale a Job
+docker-compose run --no-deps client flink list
+docker-compose run --no-deps client flink stop <job id>
+# Suspending job "4ed65605362417cf8c08426f5755d536" with a CANONICAL savepoint.
+# Savepoint completed. Path: file:/tmp/flink-savepoints-directory/savepoint-4ed656-30e0d0007cdb
+# Restart using a savepoint (replace savepoint path)
+docker-compose run --no-deps client flink run -s file:/tmp/flink-savepoints-directory/savepoint-4ed656-30e0d0007cdb \
+  -d /opt/ClickCountJob.jar \
+  --bootstrap.servers kafka:9092 --checkpointing --event-time
+# Restart with different parallelism
+docker-compose run --no-deps client flink list
+docker-compose run --no-deps client flink stop <job id>
+docker-compose run --no-deps client flink run -p 3 -s file:/tmp/flink-savepoints-directory/savepoint-fd6196-c062a2e38250 \
+  -d /opt/ClickCountJob.jar \
+  --bootstrap.servers kafka:9092 --checkpointing --event-time
+docker-compose scale taskmanager=2 # Add a taskmanager to host this parallelism
+# Get job info
+curl localhost:8081/jobs/<jod-id> | jq
+
+================
+FLINK SQL DEMO
+https://flink.apache.org/2020/07/28/flink-sql-demo-building-an-end-to-end-streaming-application/
+================
+git clone https://github.com/thimotyb/flink-sql-demo.git
+cd flink-sql-demo/
+docker-compose up -d
+# Kibana is on http://localhost:5601/
+# Flink SQL Client
+docker-compose exec sql-client ./sql-client.sh
+# Examine inbound messages in other shell
+docker-compose exec kafka bash -c 'kafka-console-consumer.sh --topic user_behavior --bootstrap-server kafka:9094 --from-beginning --max-messages 10'
+# IN Flink SQL Prompt
+CREATE TABLE user_behavior (
+    user_id BIGINT,
+    item_id BIGINT,
+    category_id BIGINT,
+    behavior STRING,
+    ts TIMESTAMP(3),
+    proctime AS PROCTIME(),   -- generates processing-time attribute using computed column
+    WATERMARK FOR ts AS ts - INTERVAL '5' SECOND  -- defines watermark on ts column, marks ts as event-time attribute
+) WITH (
+    'connector' = 'kafka',  -- using kafka connector
+    'topic' = 'user_behavior',  -- kafka topic
+    'scan.startup.mode' = 'earliest-offset',  -- reading from the beginning
+    'properties.bootstrap.servers' = 'kafka:9094',  -- kafka broker address
+    'format' = 'json'  -- the data format is json
+);
+##########################
+# Create Elasticsearch table
+#####################
+CREATE TABLE buy_cnt_per_hour (
+    hour_of_day BIGINT,
+    buy_cnt BIGINT
+) WITH (
+    'connector' = 'elasticsearch-7', -- using elasticsearch connector
+    'hosts' = 'http://elasticsearch:9200',  -- elasticsearch address
+    'index' = 'buy_cnt_per_hour'  -- elasticsearch index name, similar to database table name
+);
+#####################
+INSERT INTO buy_cnt_per_hour
+SELECT HOUR(TUMBLE_START(ts, INTERVAL '1' HOUR)), COUNT(*)
+FROM user_behavior
+WHERE behavior = 'buy'
+GROUP BY TUMBLE(ts, INTERVAL '1' HOUR);
+####################à
+# Access Kibana at http://localhost:5601. First, configure an index pattern by clicking “Management” in the left-side toolbar and find “Index Patterns”. Next, click “Create Index # Pattern” and enter the full index name buy_cnt_per_hour to create the index pattern
+# Click “Dashboard” on the left side of the page to create a dashboard named “User Behavior Analysis”. Then, click “Create New” to create a new view. Select “Area” (area graph), then select the buy_cnt_per_hour index, and draw the trading volume area chart as illustrated in the configuration on the left side of the following diagram. Apply the changes by clicking the “▶” play button. Then, save it as “Hourly Trading Volume”. X AXIS: MAX buy_cnt, Bucketsx X AXIS Aggregation Terms field hour of day ORder by Alphabetical desc size 24
+##################à
+
+REMOVE ALL CONTAINERS:
+docker rm -v -f $(docker ps -qa)
+
+REMOVE ALL IMAGES:
+docker image rm $(docker image ls -qa)
+
+
 
 
 

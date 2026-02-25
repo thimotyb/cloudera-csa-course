@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KAFKA_CONTAINER="${KAFKA_CONTAINER:-cloudera-csa-course_kafka_1}"
+KAFKA_CONTAINER="${KAFKA_CONTAINER:-}"
 TOPIC="${TOPIC:-mysqlsrc.inventory.customers_live}"
 MAX_MESSAGES="${MAX_MESSAGES:-20}"
 TIMEOUT_MS="${TIMEOUT_MS:-20000}"
 
+if [[ -z "$KAFKA_CONTAINER" ]]; then
+  KAFKA_CONTAINER="$(docker ps --format '{{.Names}}' | grep -E '(^|[-_])kafka[-_]1$' | head -n1 || true)"
+fi
+
 if ! docker ps --format '{{.Names}}' | grep -q "^${KAFKA_CONTAINER}$"; then
-  echo "[ERR] Container Kafka ${KAFKA_CONTAINER} non in esecuzione"
+  echo "[ERR] Container Kafka non in esecuzione o non rilevato"
+  echo "      Imposta KAFKA_CONTAINER=<nome_container> se necessario"
   exit 1
 fi
 

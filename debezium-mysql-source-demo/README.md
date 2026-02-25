@@ -6,7 +6,7 @@ Questa demo crea una istanza MySQL containerizzata, registra un connettore **Deb
 
 - Stack CSA CE avviato (`kafka` e `kafka-connect` running)
 - Docker + Docker Compose
-- Rete Docker dello stack CSA CE disponibile (auto-rilevata da `cloudera-kafka-connect-1`)
+- Rete Docker dello stack CSA CE disponibile (auto-rilevata dal container `kafka-connect` attivo)
 
 ## Struttura
 
@@ -51,6 +51,8 @@ Topic atteso:
 - Connector name: `mysql-source-demo`
 - Connect URL default: `http://localhost:28083`
 - MySQL demo esposto su host: `localhost:3307`
+- I container Kafka/Kafka Connect sono auto-rilevati (supporto naming Compose con `-` e `_`)
+- Override manuale se necessario: `KAFKA_CONTAINER=... CONNECT_CONTAINER=... ./scripts/start-demo.sh`
 - Per aggiornare la config del connector, rieseguire `./scripts/create-mysql-source-connector.sh`
 - Se la rete va forzata manualmente: `CSA_DOCKER_NETWORK=<nome_rete> ./scripts/start-demo.sh`
 

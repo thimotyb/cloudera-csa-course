@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONNECT_CONTAINER="${CONNECT_CONTAINER:-cloudera-csa-course_kafka-connect_1}"
+CONNECT_CONTAINER="${CONNECT_CONTAINER:-}"
 DRIVER_TARGET="${DRIVER_TARGET:-/opt/connect/plugin/libs/debezium-connector-mysql/mysql-connector-java.jar}"
 MYSQL_JDBC_VERSION="${MYSQL_JDBC_VERSION:-8.0.27}"
 TMP_FILE="/tmp/mysql-connector-java-${MYSQL_JDBC_VERSION}.jar"
 
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONNECT_CONTAINER}$"; then
-  echo "[ERR] Container Kafka Connect non in esecuzione: $CONNECT_CONTAINER"
+if [[ -z "$CONNECT_CONTAINER" ]]; then
+  CONNECT_CONTAINER="$(docker ps --format '{{.Names}}' | grep -E '(^|[-_])kafka-connect[-_]1$' | head -n1 || true)"
+fi
+
+if [[ -z "$CONNECT_CONTAINER" ]] || ! docker ps --format '{{.Names}}' | grep -q "^${CONNECT_CONTAINER}$"; then
+  echo "[ERR] Container Kafka Connect non in esecuzione o non rilevato"
+  echo "      Imposta CONNECT_CONTAINER=<nome_container> se necessario"
   exit 1
 fi
 

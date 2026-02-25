@@ -4,18 +4,32 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-required_containers=(cloudera-csa-course_kafka_1 cloudera-csa-course_kafka-connect_1)
-for c in "${required_containers[@]}"; do
-  if ! docker ps --format '{{.Names}}' | grep -q "^${c}$"; then
-    echo "[ERR] Container richiesto non in esecuzione: $c"
-    echo "      Avvia prima CSA CE (es. ./start_csa.sh)"
-    exit 1
-  fi
-done
+resolve_running_container() {
+  local explicit_name="$1"
+  local pattern="$2"
 
-CSA_DOCKER_NETWORK="${CSA_DOCKER_NETWORK:-$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' cloudera-csa-course_kafka-connect_1 | head -n1 | tr -d '[:space:]')}"
+  if [[ -n "$explicit_name" ]] && docker ps --format '{{.Names}}' | grep -qx "$explicit_name"; then
+    echo "$explicit_name"
+    return 0
+  fi
+
+  docker ps --format '{{.Names}}' | grep -E "$pattern" | head -n1 || true
+}
+
+KAFKA_CONTAINER="${KAFKA_CONTAINER:-$(resolve_running_container "" '(^|[-_])kafka[-_]1$')}"
+CONNECT_CONTAINER="${CONNECT_CONTAINER:-$(resolve_running_container "" '(^|[-_])kafka-connect[-_]1$')}"
+
+if [[ -z "$KAFKA_CONTAINER" || -z "$CONNECT_CONTAINER" ]]; then
+  echo "[ERR] Container richiesti non trovati (kafka/kafka-connect)."
+  echo "      Avvia prima CSA CE (es. ./start_csa.sh)"
+  echo "      Container attivi:"
+  docker ps --format '      - {{.Names}}'
+  exit 1
+fi
+
+CSA_DOCKER_NETWORK="${CSA_DOCKER_NETWORK:-$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{println $k}}{{end}}' "$CONNECT_CONTAINER" | head -n1 | tr -d '[:space:]')}"
 if [[ -z "$CSA_DOCKER_NETWORK" ]]; then
-  echo "[ERR] Impossibile rilevare la rete Docker del container cloudera-csa-course_kafka-connect_1"
+  echo "[ERR] Impossibile rilevare la rete Docker del container $CONNECT_CONTAINER"
   exit 1
 fi
 if ! docker network ls --format '{{.Name}}' | grep -q "^${CSA_DOCKER_NETWORK}$"; then
@@ -24,6 +38,8 @@ if ! docker network ls --format '{{.Name}}' | grep -q "^${CSA_DOCKER_NETWORK}$";
 fi
 export CSA_DOCKER_NETWORK
 echo "[INFO] Uso rete Docker: ${CSA_DOCKER_NETWORK}"
+echo "[INFO] Kafka container: ${KAFKA_CONTAINER}"
+echo "[INFO] Kafka Connect container: ${CONNECT_CONTAINER}"
 
 compose_cmd=""
 if docker compose version >/dev/null 2>&1; then
