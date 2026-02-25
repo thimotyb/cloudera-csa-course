@@ -49,3 +49,18 @@ If `docker-compose-plugin` is not found, use the user-local method above.
   - `docker compose` (preferred)
   - `docker-compose` (legacy fallback)
 - Prefer `docker compose` for all new commands.
+
+## Flink pre-download (recommended)
+
+Flink download can take some time. Prepare it in advance in `.runtime`:
+
+```bash
+cd flink-demo/flink-cli-windowing
+FLINK_VERSION=1.20.1
+SCALA_SUFFIX=2.12
+FLINK_TGZ="flink-${FLINK_VERSION}-bin-scala_${SCALA_SUFFIX}.tgz"
+
+mkdir -p .runtime
+test -f ".runtime/${FLINK_TGZ}" || curl -fL "https://archive.apache.org/dist/flink/flink-${FLINK_VERSION}/${FLINK_TGZ}" -o ".runtime/${FLINK_TGZ}"
+test -d ".runtime/flink-${FLINK_VERSION}" || tar -xf ".runtime/${FLINK_TGZ}" -C .runtime
+```
